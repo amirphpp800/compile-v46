@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IPv4 to RFC-Compliant IPv6 Converter</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #1e293b;
+        color: #e2e8f0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 40px 20px;
+    }
+
+    h1 {
+        color: #22c55e;
+        margin-bottom: 20px;
+    }
+
+    input[type="text"] {
+        padding: 8px 12px;
+        font-size: 16px;
+        border-radius: 6px;
+        border: none;
+        margin-bottom: 10px;
+    }
+
+    button {
+        padding: 8px 16px;
+        font-size: 16px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        color: white;
+    }
+
+    #generateBtn {
+        background-color: #2563eb;
+    }
+
+    #copyBtn {
+        background-color: #22c55e;
+        margin-top: 15px;
+    }
+
+    .results-container {
+        margin-top: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 400px;
+    }
+
+    .result-card {
+        background-color: #0f172a;
+        padding: 15px;
+        border-radius: 8px;
+        border-left: 4px solid #22c55e;
+    }
+
+    .result-card p {
+        margin: 5px 0;
+        word-break: break-all;
+    }
+
+    .label {
+        color: #f97316;
+        font-weight: bold;
+    }
+
+    /* Toggle Switch */
+    .toggle-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+    }
+
+    .switch input { 
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: 0.4s;
+        border-radius: 24px;
+    }
+
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 2px;
+        bottom: 2px;
+        background-color: white;
+        transition: 0.4s;
+        border-radius: 50%;
+    }
+
+    input:checked + .slider {
+        background-color: #22c55e;
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(26px);
+    }
+
+    #customPrefixInput {
+        display: none;
+        width: 200px;
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: none;
+    }
+</style>
+</head>
+<body>
+
+<h1>IPv4 to RFC-Compliant IPv6 Converter</h1>
+
+<div>
+    <input type="text" id="ipv4Input" placeholder="Enter IPv4 (e.g., 192.0.2.128)">
+    <button id="generateBtn">Generate</button>
+</div>
+
+<div class="toggle-container">
+    <label class="switch">
+        <input type="checkbox" id="customPrefixCheckbox">
+        <span class="slider"></span>
+    </label>
+    <span>Enable Custom Prefix</span>
+    <input type="text" id="customPrefixInput" placeholder="Enter your IPv6 prefix (e.g., 2001:db8)">
+</div>
+
+<div class="results-container" id="results" style="display:none;">
+    <div class="result-card">
+        <p><span class="label">IPv4-mapped:</span> <span id="mapped"></span></p>
+    </div>
+    <div class="result-card">
+        <p><span class="label">IPv4-compatible:</span> <span id="compatible"></span></p>
+    </div>
+    <div class="result-card">
+        <p><span class="label">Embedded Hex:</span> <span id="embedded"></span></p>
+    </div>
+    <div class="result-card">
+        <p><span class="label">Custom Prefix:</span> <span id="custom"></span></p>
+    </div>
+</div>
+
+<button id="copyBtn" style="display:none;">Copy All</button>
+
+<script>
+function validateIPv4(ip) {
+    const octets = ip.split('.');
+    return octets.length === 4 && octets.every(o => !isNaN(o) && o >= 0 && o <= 255);
+}
+
+document.getElementById('customPrefixCheckbox').addEventListener('change', function() {
+    document.getElementById('customPrefixInput').style.display = this.checked ? 'inline-block' : 'none';
+});
+
+function generateIPv6() {
+    const ipv4 = document.getElementById('ipv4Input').value.trim();
+    if(!validateIPv4(ipv4)){
+        alert("Please enter a valid IPv4 address!");
+        return;
+    }
+
+    // IPv4-mapped ::ffff:a.b.c.d
+    const mapped = `::ffff:${ipv4}`;
+
+    // IPv4-compatible ::a.b.c.d
+    const compatible = `::${ipv4}`;
+
+    // Embedded hex ::xxxx:xxxx
+    const hex = ipv4.split('.').map(o => parseInt(o).toString(16).padStart(2,'0')).join('');
+    const embedded = `::${hex.slice(0,4)}:${hex.slice(4,8)}`;
+
+    // Custom Prefix
+    let customPrefix = "2001:db8"; // default
+    if(document.getElementById('customPrefixCheckbox').checked) {
+        const userPrefix = document.getElementById('customPrefixInput').value.trim();
+        if(userPrefix) customPrefix = userPrefix;
+    }
+    const custom = `${customPrefix}::${ipv4}`;
+
+    // Show results
+    document.getElementById('mapped').textContent = mapped;
+    document.getElementById('compatible').textContent = compatible;
+    document.getElementById('embedded').textContent = embedded;
+    document.getElementById('custom').textContent = custom;
+
+    document.getElementById('results').style.display = 'flex';
+    document.getElementById('copyBtn').style.display = 'inline-block';
+}
+
+function copyAll() {
+    const mapped = document.getElementById('mapped').textContent;
+    const compatible = document.getElementById('compatible').textContent;
+    const embedded = document.getElementById('embedded').textContent;
+    const custom = document.getElementById('custom').textContent;
+
+    const textToCopy = `IPv4-mapped: ${mapped}\nIPv4-compatible: ${compatible}\nEmbedded Hex: ${embedded}\nCustom Prefix: ${custom}`;
+    
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        alert("All IPv6 formats copied!");
+    });
+}
+
+document.getElementById('generateBtn').addEventListener('click', generateIPv6);
+document.getElementById('copyBtn').addEventListener('click', copyAll);
+</script>
+
+</body>
+</html>
